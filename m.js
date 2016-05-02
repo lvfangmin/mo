@@ -53,10 +53,10 @@ try {
             }();
             b.a.e = function() {
                 var g, k = /^(?:[a-z]+:\/\/|:?\/?\/)?(?:www\.)?([^\/:]*)/i;
-                b.d.a || (g = b.a.f(),
+                b.d.hasANewTopWindow || (g = b.a.f(),
                 !g && b.d.b && (g = b.d.b));
-                g || (g = b.d.c.location.hostname);
-                return (g = g && g.match && g.match(k)) && g[1] || b.d.c.location.hostname
+                g || (g = b.d.bestWindow.location.hostname);
+                return (g = g && g.match && g.match(k)) && g[1] || b.d.bestWindow.location.hostname
             }
             ;
             b.a.f = function() {
@@ -199,7 +199,7 @@ try {
             }
             ;
             b.a.s = function(g, k, u) {
-                if (("undefined" === typeof u || !u) && g && (u = b.a.t(g),
+                if (("undefined" === typeof u || !u) && g && (u = b.a.getParentWindow(g),
                 !u))
                     return;
                 if (g && g.nodeType)
@@ -251,14 +251,14 @@ try {
             b.a.x = function(g, k) {
                 var c = "number" === typeof k ? k : 50
                   , d = []
-                  , m = b.a.t(g);
+                  , m = b.a.getParentWindow(g);
                 if (m)
                     d.push(m);
                 else
                     return d;
                 b.a.forEach(c, function() {
-                    var k = b.e.a(g, m);
-                    return k && (m = b.a.t(k)) ? (d.push(m),
+                    var k = b.e.getWindowFrameElement(g, m);
+                    return k && (m = b.a.getParentWindow(k)) ? (d.push(m),
                     true) : false
                 });
                 return d
@@ -308,7 +308,7 @@ try {
             }();
             b.a.af = function() {
                 var g = b.a.ae()
-                  , k = b.d.c.screen;
+                  , k = b.d.bestWindow.screen;
                 if ("iOS" === g.env)
                     return "undefined" !== typeof window.orientation ? 0 === window.orientation || 180 === window.orientation ? (g = k.width,
                     k = k.height) : (g = k.height,
@@ -318,10 +318,10 @@ try {
                         h: k
                     };
                 if ("Android" === g.env) {
-                    var g = b.d.c.devicePixelRatio
+                    var g = b.d.bestWindow.devicePixelRatio
                       ,
                     c = 1;
-                    .05 > t.abs(k.width / b.d.c.innerWidth - g) && (c = g);
+                    .05 > t.abs(k.width / b.d.bestWindow.innerWidth - g) && (c = g);
                     return {
                         w: k.width / c,
                         h: k.height / c
@@ -342,9 +342,9 @@ try {
                 return function() {
                     if ("undefined" !== typeof g)
                         return g;
-                    var k = b.d.c
+                    var k = b.d.bestWindow
                       , c = b.a.af();
-                    if (b.d.c.navigator.standalone)
+                    if (b.d.bestWindow.navigator.standalone)
                         g = true;
                     else {
                         var d = k.innerWidth / c.w
@@ -521,7 +521,7 @@ try {
             b.a.ay = function(g, k) {
                 if (!g || !k)
                     return false;
-                var c = b.a.ax(b.d.f ? G.ownerDocument.body || k : k);
+                var c = b.a.ax(b.d.hasParentWindow ? G.ownerDocument.body || k : k);
                 if (c && 0 < c.length) {
                     var d = c[0] && c[0].src && c[0].src.match(/moatads.com\/(.*)\/moat(ad|video)\.js/);
                     d && d[1] && (g.zMoatOtherScript = d[1],
@@ -645,10 +645,11 @@ try {
                 return c
             }
             ;
-            b.a.bi = function(b, k) {
-                for (var c = [], d = 0; d < k.length; d++)
-                    c.push(b(k[d]));
-                return c
+            b.a.arrayConvert = function(func, k) {
+                var result = [];
+                for (var d = 0; d < k.length; d++)
+                    result.push(func(k[d]));
+                return result
             }
             ;
             b.a.indexOf = function(g, k) {
@@ -810,19 +811,20 @@ try {
             }
             ;
             var z = /rect\((\d+)px,? ?(\d+)px,? ?(\d+)px,? ?(\d+)px\)/;
-            b.a.bw = function(g) {
-                g = g.match(z);
-                var k = false;
-                g && (g = b.a.bi(function(b) {
+            b.a.getClipRect = function(clipRect) {
+                clipRectMatched = clipRect.match(z);
+                if (!clipRectMatched) {
+                  return false;
+                }
+                rect = b.a.arrayConvert(function(b) {
                     return parseInt(b, 10)
-                }, g),
-                k = {
-                    top: g[1],
-                    right: g[2],
-                    bottom: g[3],
-                    left: g[4]
-                });
-                return k
+                }, clipRectMatched);
+                return {
+                    top: rect[1],
+                    right: rect[2],
+                    bottom: rect[3],
+                    left: rect[4]
+                };
             }
             ;
             b.a.bx = function(g) {
@@ -891,29 +893,37 @@ try {
                 }
             }
             ;
-            b.a.t = function(b) {
+            b.a.getParentWindow = function(element) {
                 try {
-                    var k = b && b.ownerDocument;
-                    return k && (k.defaultView || k.parentWindow)
+                    var k = element && element.ownerDocument;
+                    if (k) {
+                      return k.defaultView || k.parentWindow;
+                    }
                 } catch (c) {
                     return false
                 }
             }
             ;
-            b.a.cc = function(g, k) {
-                if (!g || !k)
+            b.a.getNestedFrameElements = function(element, parentWindow) {
+                if (!element || !parentWindow) {
                     return false;
-                for (var c = [], d, m = 0; 50 > m; m++)
-                    if (k != k.parent) {
-                        if (d = b.e.a(g, k))
-                            c.push(d);
-                        else
-                            break;
-                        k = k.parent;
-                        g = d
-                    } else
-                        break;
-                return c
+                }
+                var frameElements = [];
+                for (var m = 0; 50 > m; m++) {
+                    if (parentWindow == parentWindow.parent) {
+                      break;
+                    }
+
+                    var frameElement = b.e.getWindowFrameElement(element, parentWindow);
+                    if (!frameElement) {
+                      break;
+                    }
+
+                    frameElements.push(frameElement);
+                    parentWindow = parentWindow.parent;
+                    element = frameElement;
+                }
+                return frameElements
             }
             ;
             b.a.cd = function(b) {
@@ -940,7 +950,7 @@ try {
                 if (b.a.br(g && g.Function.prototype.toString))
                     return k.toString = g.Function.prototype.toString,
                     k.toString();
-                var c = b.d.c !== g && b.d.c && b.d.c.Function.prototype.toString;
+                var c = b.d.bestWindow !== g && b.d.bestWindow && b.d.bestWindow.Function.prototype.toString;
                 if (b.a.br(c))
                     return k.toString = c,
                     k.toString();
@@ -961,7 +971,7 @@ try {
             }
             ;
             b.a.toString = function(g, k) {
-                k = k || b.d.c;
+                k = k || b.d.bestWindow;
                 var c;
                 try {
                     c = v(k, g)
@@ -1016,10 +1026,10 @@ try {
                 }
             }
             ;
-            b.e.a = function(l, f) {
-                f = f || b.a.t(l);
+            b.e.getWindowFrameElement = function(element, parentWindow) {
+                parentWindow = parentWindow || b.a.getParentWindow(element);
                 try {
-                    return f && f.frameElement
+                    return parentWindow && parentWindow.frameElement
                 } catch (h) {
                     return false
                 }
@@ -1036,7 +1046,7 @@ try {
             }
             ;
             b.e.d = function(l) {
-                if (l = b.e.a(l))
+                if (l = b.e.getWindowFrameElement(l))
                     try {
                         return l.parentNode
                     } catch (f) {}
@@ -1050,7 +1060,7 @@ try {
                   , e = [];
                 for (f = f || 10; h < f; )
                     if (h++,
-                    l = b.e.a(l))
+                    l = b.e.getWindowFrameElement(l))
                         e.push(l);
                     else
                         return e
@@ -1063,7 +1073,7 @@ try {
                 for (f = f || 10; h < f; ) {
                     h++;
                     try {
-                        if (l = (c = l.frameElement) && b.a.t(c),
+                        if (l = (c = l.frameElement) && b.a.getParentWindow(c),
                         c && l && !b.e.isOldWindow(l))
                             e.push(l);
                         else
@@ -1176,12 +1186,12 @@ try {
                   , d = document
                   , e = window
                   , m = c(e);
-                if (!m && b.d.r)
+                if (!m && b.d.hasANewParentWindow)
                     for (var r = 0; 20 > r && !m; r++) {
-                        d = b.e.a(d.body);
+                        d = b.e.getWindowFrameElement(d.body);
                         if (false !== d && !d)
                             break;
-                        d = (e = b.a.t(d)) && e.document;
+                        d = (e = b.a.getParentWindow(d)) && e.document;
                         m = m || c(e)
                     }
                 b.d.s = function() {
@@ -1258,12 +1268,12 @@ try {
                   , e = document
                   , m = c(d)
                   , r = !(!m && !d.$sf);
-                if (!m && b.d.r)
+                if (!m && b.d.hasANewParentWindow)
                     for (var f = 0; 20 > f && !m; f++) {
-                        e = b.e.a(e.body);
+                        e = b.e.getWindowFrameElement(e.body);
                         if (false !== e && !e)
                             break;
-                        e = (d = b.a.t(e)) && d.document;
+                        e = (d = b.a.getParentWindow(e)) && d.document;
                         m = m || c(d);
                         r = r || m || d.$sf
                     }
@@ -1304,12 +1314,12 @@ try {
                   , e = document
                   , m = c(d)
                   , f = !(!m && !d.context);
-                if (!m && b.d.r)
+                if (!m && b.d.hasANewParentWindow)
                     for (var z = 0; 20 > z && !m; z++) {
-                        e = b.e.a(e.body);
+                        e = b.e.getWindowFrameElement(e.body);
                         if (false !== e && !e)
                             break;
-                        e = (d = b.a.t(e)) && d.document;
+                        e = (d = b.a.getParentWindow(e)) && d.document;
                         m = m || c(d);
                         f = f || m || d.context
                     }
@@ -1343,19 +1353,19 @@ try {
             ;
             b.d.protocol = b.a.bb();
             b.d.ab = ("https:" === b.d.protocol ? "z" : "js") + ".moatads.com";
-            b.d.f = window != window.parent;
-            var isOldWindow = b.e.isOldWindow(window.parent);
-            b.d.r = b.d.f && !isOldWindow;
+            b.d.hasParentWindow = window != window.parent;
+            var isParentWindowAnOldWindow = b.e.isOldWindow(window.parent);
+            b.d.hasANewParentWindow = b.d.hasParentWindow && !isParentWindowAnOldWindow;
             b.d.ac = b.a.y();
-            b.d.a = isOldWindow ? false : !b.e.isOldWindow(window.top);
-            b.d.c = b.d.a ? window.top : b.d.r ? window.parent : window;
-            b.a.ae().isInApp && (b.d.a = b.a.al() || b.a.aj());
-            b.d.b = b.d.c.document.referrer || "";
+            b.d.hasANewTopWindow = !isParentWindowAnOldWindow && !b.e.isOldWindow(window.top);
+            b.d.bestWindow = b.d.hasANewTopWindow ? window.top : b.d.hasANewParentWindow ? window.parent : window;
+            b.a.ae().isInApp && (b.d.hasANewTopWindow = b.a.al() || b.a.aj());
+            b.d.b = b.d.bestWindow.document.referrer || "";
             try {
-                b.d.ad = b.d.c.history && b.d.c.history.length
+                b.d.ad = b.d.bestWindow.history && b.d.bestWindow.history.length
             } catch (n) {}
             try {
-                if (!b.d.a) {
+                if (!b.d.hasANewTopWindow) {
                     var e = window, c;
                     for (c = 0; 20 > c && e != window.top; c++)
                         e = e.parent;
@@ -1363,7 +1373,7 @@ try {
                 }
             } catch (n) {}
             b.d.af = function() {
-                var c = b.d.c;
+                var c = b.d.bestWindow;
                 if (!c)
                     return false;
                 try {
@@ -1381,7 +1391,7 @@ try {
                     b.d.ai = b.d.ai || 0,
                     b.d.aj = b.d.aj || 0
                 }
-                var m = b.d.ak(c);
+                var m = b.d.getWindowRect(c);
                 b.d.al = m.width;
                 b.d.am = m.height;
                 try {
@@ -1396,25 +1406,39 @@ try {
                 b.d.aq = d.scrollTop || e.scrollTop || c.pageYOffset || 0)
             }
             ;
-            b.d.ak = function(b) {
-                var c, e, m, f = 0, z = 0;
+            b.d.getWindowRect = function(win) {
                 try {
-                    (c = b.document,
-                    e = c.documentElement,
-                    m = c.body,
-                    "undefined" !== typeof b.innerWidth) ? (f = b.innerWidth,
-                    z = b.innerHeight) : "CSS1Compat" === c.compatMode && 5 !== c.documentMode || !m || "undefined" === typeof m.clientWidth ? e &&
-                    "undefined" !== typeof e.clientWidth && (f = e.clientWidth,
-                    z = e.clientHeight) : (f = m.clientWidth,
-                    z = m.clientHeight)
-                } catch (h) {}
+                    var width = 0;
+                    var height = 0;
+                    var doc = win.document;
+                    var docElement = doc.documentElement;
+                    var docBody = doc.body;
+                    if ("undefined" !== typeof win.innerWidth) {
+                      width = win.innerWidth;
+                      height = win.innerHeight;
+                    } else {
+                      if ("CSS1Compat" === doc.compatMode &&
+                          5 !== doc.documentMode ||
+                          !docBody ||
+                          "undefined" === typeof docBody.clientWidth
+                      ) {
+                        if (docElement && "undefined" !== typeof docElement.clientWidth) {
+                          width = docElement.clientWidth;
+                          height = docElement.clientHeight;
+                        }
+                      } else {
+                        width = docBody.clientWidth;
+                        height = docBody.clientHeight;
+                      }
+                    }
+                } catch (ignore) {}
                 return {
-                    width: f,
-                    height: z,
+                    width: width,
+                    height: height,
                     left: 0,
-                    right: f,
+                    right: width,
                     top: 0,
-                    bottom: z
+                    bottom: height
                 }
             }
             ;
@@ -1447,7 +1471,7 @@ try {
             }
             ;
             b.d.au = function() {
-                return b.d.a
+                return b.d.hasANewTopWindow;
             }
             ;
             b.d.av = function() {
@@ -1468,14 +1492,14 @@ try {
                 return c ? b.d.au() || b.d.av() || b.d.ax(c) || b.d.aw() ? true : false : false
             }
             ;
-            b.d.e = new b.d.c.Image;
+            b.d.e = new b.d.bestWindow.Image;
             b.d.h = function() {
-                if ("undefined" !== typeof b.d.c["Moat#EVA"])
+                if ("undefined" !== typeof b.d.bestWindow["Moat#EVA"])
                     return true;
                 try {
-                    if ("undefined" !== typeof b.d.c.eval &&
-                    (b.d.c.eval("(function(win){ win['Moat#EVA'] = true; })(window)"),
-                    "undefined" !== typeof b.d.c["Moat#EVA"]))
+                    if ("undefined" !== typeof b.d.bestWindow.eval &&
+                    (b.d.bestWindow.eval("(function(win){ win['Moat#EVA'] = true; })(window)"),
+                    "undefined" !== typeof b.d.bestWindow["Moat#EVA"]))
                         return true
                 } catch (c) {}
                 return false
@@ -1674,7 +1698,7 @@ try {
                 }
                 h[b] = h[b] || {
                     zs: false,
-                    zr: 0,
+                    adNum: 0,
                     yf: {},
                     h: 0,
                     m: 0,
@@ -1789,7 +1813,7 @@ try {
             }
             ;
             b.k.g = function(f, h) {
-                var e = b.k.b(b.d.c);
+                var e = b.k.b(b.d.bestWindow);
                 e && e.xc.twer(f, h)
             }
             ;
@@ -1822,7 +1846,7 @@ try {
             ;
             b.k.b = function(f) {
                 try {
-                    return f = f || b.d.c,
+                    return f = f || b.d.bestWindow,
                     f[b.d.j]
                 } catch (h) {
                     return null
@@ -1951,7 +1975,7 @@ try {
             b.l = {};
             b.l.a = function(f) {
                 f && (f.xa.txae || (f.xb == window ? l(b.d.j, window, t) : b.a.cf(l, "'" + b.d.j + "',window, Math", f.xb)),
-                f.zs || (f.dcsx = new f.xa.txae(b.d.c,f.swde),
+                f.zs || (f.dcsx = new f.xa.txae(b.d.bestWindow,f.swde),
                 f.zs =
                 true))
             }
@@ -2124,40 +2148,55 @@ try {
             b.g.k = l
         })(q);
         (function(b) {
-            function l() {
+            function Offset() {
                 this.height = this.width = this.absTop = this.absLeft = 0;
-                this.update = function(b) {
-                    var c = d("left", b.win)
-                      , e = d("top", b.win);
-                    false !== c && false !== e && (this.absLeft = b.left + c,
-                    this.absTop = b.top + e,
-                    this.width = b.width,
-                    this.height = b.height)
+                this.update = function(targetRect) {
+                    var windowXOffset = getWindowPageOffset("left", targetRect.win);
+                    var windowYOffset = getWindowPageOffset("top", targetRect.win);
+                    if (false !== windowXOffset && false !== windowYOffset) {
+                      this.absLeft = targetRect.left + windowXOffset;
+                      this.absTop = targetRect.top + windowYOffset;
+                      this.width = targetRect.width;
+                      this.height = targetRect.height;
+                    }
                 }
             }
-            function f(g, c) {
-                var d = g.zr;
-                v.hasOwnProperty(d) || (v[d] = new l);
-                var e = c || new b.n.j(g.aa);
-                v[d].update(e)
+            function updateAdRect(ad, targetRect) {
+                var adNum = ad.adNum;
+                if (!ads.hasOwnProperty(adNum)) {
+                  ads[adNum] = new Offset();
+                }
+                var targetRect = targetRect || new b.n.getTargetRect(ad.aa);
+                ads[adNum].update(targetRect)
             }
-            function h(g,
-            k) {
-                if (!g)
-                    return false;
-                var d = "number" == typeof g.zr, e, m;
-                d ? (e = g.aa,
-                m = g._calcVideoBasedOnContainer) : e = g;
-                m = m ? new b.n.j(e.parentNode,k) : new b.n.j(e,k);
-                e = m.height;
-                var n = m.width
-                  , r = m.calcArea();
-                if (0 === r)
-                    return {
-                        area: r,
-                        percv: 0
-                    };
-                var h = c(m), z = h.visibleRect.calcArea(), x = z / r, v;
+            function checkAdVisible(ad, parentWindow) {
+                if (!ad) {
+                  return false;
+                }
+                var hasAdNum = "number" == typeof ad.adNum;
+                var e, calcVideoBasedOnContainer;
+                if (hasAdNum) {
+                  video_slot = ad.aa;
+                  calcVideoBasedOnContainer = ad._calcVideoBasedOnContainer;
+                } else {
+                  video_slot = ad;
+                }
+                targetRect = calcVideoBasedOnContainer
+                  ? new b.n.getTargetRect(video_slot.parentNode, parentWindow)
+                  : new b.n.getTargetRect(video_slot, parentWindow);
+                e = targetRect.height;
+                var n = targetRect.width;
+                var targetRectArea = targetRect.calcArea();
+                if (0 === targetRectArea) {
+                  return {
+                      area: targetRectArea,
+                      percv: 0
+                  };
+                }
+                var h = getVisibleInfo(targetRect);
+                var visibleRectArea = h.visibleRect.calcArea();
+                var percv = visibleRectArea / targetRectArea;
+                var v;
                 a: {
                     var l = h.cumulRect
                       , q = h.cumulRect.getViewportRect();
@@ -2189,13 +2228,16 @@ try {
                         yMax: l
                     }
                 }
-                d && f(g, m);
+
+                if (hasAdNum) {
+                  updateAdRect(ad, targetRect);
+                }
                 return {
-                    area: r,
-                    visibleArea: z,
+                    area: targetRectArea,
+                    visibleArea: visibleRectArea,
                     visibleRect: h.visibleRect,
                     cumulRect: h.cumulRect,
-                    percv: x,
+                    percv: percv,
                     yMinMax: v,
                     elGeo: {
                         elHeight: e,
@@ -2203,33 +2245,43 @@ try {
                         foldTop: h.cumulRect.top,
                         totalArea: h.parentArea
                     },
-                    rect: m.rect
+                    rect: targetRect.rect
                 }
             }
-            function e(b, c) {
-                for (var d = [], e = 0; e < c.length; e++)
-                    d.push(b(c[e]));
-                return d
+            function forAllElements(funcActOnElement, nestedFrameElements) {
+                var nestedFrameElementsRect = [];
+                for (var e = 0; e < nestedFrameElements.length; e++) {
+                    nestedFrameElementsRect.push(funcActOnElement(nestedFrameElements[e]));
+                }
+                return nestedFrameElementsRect;
             }
-            function c(g) {
-                var c, d = b.a.cc(g.el, g.win), d = e(function(g) {
-                    return new b.n.j(g)
-                }, d);
-                d.unshift(g);
-                var m = d.length;
-                g = new b.n.j(g.el,b.d.c);
-                for (var f = 0; f < m; f++) {
-                    var n =
-                    d[f];
-                    0 === f ? c = n : (c.changeReferenceFrame(n),
-                    g.changeReferenceFrame(n));
-                    n = n.getViewportRect(f < m - 1 ? d[f + 1] : false);
-                    c = b.n.l(c, n)
+            function getVisibleInfo(targetRect) {
+                var nestedFrameElements = b.a.getNestedFrameElements(targetRect.el, targetRect.win);
+                var nestedFrameElementsRect = forAllElements(function(element) {
+                    return new b.n.getTargetRect(element)
+                }, nestedFrameElements);
+                nestedFrameElementsRect.unshift(targetRect);
+                cumulRect = new b.n.getTargetRect(targetRect.el, b.d.bestWindow);
+                var visibleRect;
+                for (var f = 0; f < nestedFrameElementsRect.length; f++) {
+                    var n = nestedFrameElementsRect[f];
+                    if (f === 0) {
+                      visibleRect = n;
+                    } else {
+                      visibleRect.changeReferenceFrame(n);
+                      cumulRect.changeReferenceFrame(n);
+                    }
+                    var viewportRect = n.getViewportRect(
+                      f < nestedFrameElementsRect.length - 1
+                      ? nestedFrameElementsRect[f + 1]
+                      : false
+                    );
+                    visibleRect = b.n.intersect(visibleRect, viewportRect)
                 }
                 return {
-                    visibleRect: c,
-                    cumulRect: g,
-                    parentArea: d[d.length - 1].calcArea()
+                    visibleRect: visibleRect,
+                    cumulRect: cumulRect,
+                    parentArea: nestedFrameElementsRect[nestedFrameElementsRect.length - 1].calcArea()
                 }
             }
             function n(b, c, d, e) {
@@ -2237,15 +2289,19 @@ try {
                 c = t.min(c, e);
                 return c > b ? [b, c] : [0, 0]
             }
-            function d(b, c) {
-                c || (c = window);
-                try {
-                    var d = c.document.documentElement
-                      , e = c.document.body;
-                    return "left" === b ? c.pageXOffset || d && d.scrollLeft || e && e.scrollLeft : c.pageYOffset || d && d.scrollTop || e && e.scrollTop
-                } catch (m) {
-                    return false
-                }
+            function getWindowPageOffset(pos, win) {
+              if (!win) {
+                win = window;
+              }
+              try {
+                  var docElement = win.document.documentElement;
+                  var docBody = win.document.body;
+                  return "left" === pos
+                    ? win.pageXOffset || docElement && docElement.scrollLeft || docBody && docBody.scrollLeft
+                    : win.pageYOffset || docElement && docElement.scrollTop || docBody && docBody.scrollTop;
+              } catch (error) {
+                  return false
+              }
             }
             function x(g, c, d, e) {
                 var m = [],
@@ -2279,10 +2335,10 @@ try {
                     }
                 }
                   , f = b.e.e(g)
-                  , f = e(function(c) {
-                    var k = new b.n.j(g)
+                  , f = forAllElements(function(c) {
+                    var k = new b.n.getTargetRect(g)
                       ,
-                    d = new b.n.j(c);
+                    d = new b.n.getTargetRect(c);
                     k.changeReferenceFrame(d);
                     return {
                         rect: k,
@@ -2291,7 +2347,7 @@ try {
                     }
                 }, f);
                 f.unshift({
-                    rect: new b.n.j(g),
+                    rect: new b.n.getTargetRect(g),
                     frame: g,
                     doc: g.ownerDocument
                 });
@@ -2302,37 +2358,47 @@ try {
                 return d.corners
             }
             b.n = {};
-            var browserSupported = b.d.a
-              , v = {};
-            b.n.a = .5;
+            var browserSupported = b.d.hasANewTopWindow;
+            var ads = {};
+            b.n.visibleThreshold = .5;
             b.n.b = 236425;
-            b.n.c = .98;
-            b.n.d = void 0;
+            b.n.fullyVisibleThreshold = .98;
+            b.n.maxVisiblePercv = void 0;
             b.n.e = function(g, c) {
                 c = c || false;
                 return function(d, e) {
-                    var m = d.ao.skin ? b.n.f(d, e) : h(d, e);
+                    var m = d.ao.skin ? b.n.getVisibleResult(d, e) : checkAdVisible(d, e);
                     m.isVisible = c ? m.percv > g : m.percv >= g;
                     m.elGeo && (m.elGeo.threshold = g);
                     return m
                 }
             }
             ;
-            b.n.f = function(g, c) {
-                var d = h(g, c)
-                  , e = b.n.g(d, g)
-                  , m = b.n.c;
-                d.isVisible = d.percv >= e;
-                d.isFullyVisible = d.percv >= m;
-                d.elGeo && (d.elGeo.threshold = e);
-                g.videoIsFullscreen && 0 < d.percv && (d.isVisible = true);
-                .8 <= d.percv && (d.isDentsuVisible = true);
-                b.n.d ? d.percv > b.n.d && (b.n.d = d.percv) : b.n.d = d.percv;
-                return d
+            b.n.getVisibleResult = function(ad, parentWindow) {
+                var visibleResult = checkAdVisible(ad, parentWindow);
+                var visibleThreshold = b.n.getVisibleThreshold(visibleResult, ad);
+                var fullyVisibleThreshold = b.n.fullyVisibleThreshold;
+                visibleResult.isVisible = visibleResult.percv >= visibleThreshold;
+                visibleResult.isFullyVisible = visibleResult.percv >= fullyVisibleThreshold;
+                if (visibleResult.elGeo) {
+                  visibleResult.elGeo.threshold = visibleThreshold;
+                }
+                if (ad.videoIsFullscreen && 0 < visibleResult.percv) {
+                  visibleResult.isVisible = true;
+                }
+                if (.8 <= visibleResult.percv) {
+                  visibleResult.isDentsuVisible = true;
+                }
+                if (b.n.maxVisiblePercv) {
+                  b.n.maxVisiblePercv = Math.max(b.n.maxVisiblePercv, visibleResult.percv);
+                } else {
+                  b.n.maxVisiblePercv = visibleResult.percv;
+                }
+                return visibleResult;
             }
             ;
-            b.n.g = function(g, c) {
-                return b.n.a
+            b.n.getVisibleThreshold = function(g, c) {
+                return b.n.visibleThreshold;
             }
             ;
             b.n.isNewBrowser = function() {
@@ -2340,23 +2406,23 @@ try {
             }
             ;
             b.n.i = function(b, c) {
-                browserSupported && v.hasOwnProperty(c) || f(b);
-                return v[c]
+                browserSupported && ads.hasOwnProperty(c) || updateAdRect(b);
+                return ads[c]
             }
             ;
-            b.n.k = b.d.ak;
-            b.n.j = function(g, c, d, e) {
+            b.n.k = b.d.getWindowRect;
+            b.n.getTargetRect = function(element, parentWindow, rect, e) {
                 try {
-                    this.rect = d || g.getBoundingClientRect && g.getBoundingClientRect() || {}
-                } catch (m) {
+                    this.rect = rect || element.getBoundingClientRect && element.getBoundingClientRect() || {}
+                } catch (error) {
                     this.rect =
-                    d || g && {
-                        top: g.offsetTop,
-                        left: g.offsetLeft,
-                        width: g.offsetWidth,
-                        height: g.offsetHeight,
-                        bottom: g.offsetTop + g.offsetHeight,
-                        right: g.offsetLeft + g.offsetWidth
+                    rect || element && {
+                        top: element.offsetTop,
+                        left: element.offsetLeft,
+                        width: element.offsetWidth,
+                        height: element.offsetHeight,
+                        bottom: element.offsetTop + element.offsetHeight,
+                        right: element.offsetLeft + element.offsetWidth
                     } || {}
                 }
                 d = "left right top bottom width height".split(" ");
@@ -2364,32 +2430,41 @@ try {
                     var f = d[e];
                     this[f] = this.rect[f]
                 }
-                g && g.CLIPCHECKINGTARGET && (d = b.a.bw(g.CLIPCHECKINGTARGET.style.clip)) && (this.right = this.left + d.right,
-                this.left += d.left,
-                this.bottom = this.top + d.bottom,
-                this.top += d.top);
+                if (element && element.CLIPCHECKINGTARGET &&
+                    (d = b.a.getClipRect(element.CLIPCHECKINGTARGET.style.clip))){
+                  this.right = this.left + d.right;
+                  this.left += d.left;
+                  this.bottom = this.top + d.bottom;
+                  this.top += d.top;
+                }
                 this.width = this.right - this.left;
                 this.height = this.bottom - this.top;
-                this.el = g;
-                this.win = c || g && b.a.t(g);
+                this.el = element;
+                this.win = parentWindow || element && b.a.getParentWindow(element);
                 this.changeReferenceFrame = function(b) {
                     this.left += b.left;
                     this.right += b.left;
                     this.top += b.top;
                     this.bottom += b.top
                 }
-                ;
                 this.calcArea = function() {
                     return (this.right - this.left) * (this.bottom - this.top)
                 }
-                ;
-                this.getViewportRect = function(g) {
-                    var c = b.d.ak(this.win);
-                    g && (g.width < c.width && (c.width = g.width,
-                    c.right = c.left + c.width),
-                    g.height < c.height && (c.height = g.height,
-                    c.bottom = c.top + c.height));
-                    return c
+                this.getViewportRect = function(targetRect) {
+                    var viewportRect = b.d.getWindowRect(this.win);
+                    if (!targetRect) {
+                      return viewportRect;
+                    }
+
+                    if (targetRect.width < viewportRect.width) {
+                      viewportRect.width = targetRect.width;
+                      viewportRect.right = viewportRect.left + viewportRect.width;
+                    }
+                    if (targetRect.height < viewportRect.height) {
+                      viewportRect.height = targetRect.height;
+                      viewportRect.bottom = viewportRect.top + viewportRect.height;
+                    }
+                    return viewportRect
                 }
             }
             ;
@@ -2412,29 +2487,28 @@ try {
                 }
             }
             ;
-            b.n.l = function(c, k) {
-                var d = n(c.left, c.right, k.left, k.right)
-                  , e = n(c.top, c.bottom, k.top, k.bottom);
-                return new b.n.j(void 0,void 0,{
+            b.n.intersect = function(visibleRect, viewportRect) {
+                var d = n(visibleRect.left, visibleRect.right, viewportRect.left, viewportRect.right)
+                  , e = n(visibleRect.top, visibleRect.bottom, viewportRect.top, viewportRect.bottom);
+                return new b.n.getTargetRect(void 0,void 0,{
                     left: d[0],
                     right: d[1],
                     top: e[0],
                     bottom: e[1]
                 })
             }
-            ;
             b.n.n = d;
             b.n.o = h;
             b.n.p = function(c) {
                 var k = c.aa;
-                c = c.zr;
+                c = c.adNum;
                 if (k) {
-                    if (b.d.r)
+                    if (b.d.hasANewParentWindow)
                         k = r(k, c);
                     else
-                        var d = new b.n.j(k)
+                        var d = new b.n.getTargetRect(k)
                           , d = m(d)
-                          , k = x(d, b.d.c.document,
+                          , k = x(d, b.d.bestWindow.document,
                         k, c);
                     return {
                         half: 1 < k.length ? true : false,
@@ -2514,7 +2588,7 @@ try {
                     pixels: [{
                         name: "center",
                         id: "moatPx" +
-                        c.zr + "_" + t.ceil(1E6 * t.random()),
+                        c.adNum + "_" + t.ceil(1E6 * t.random()),
                         target: c.aa,
                         container: c.aa.parentNode,
                         position: {
@@ -2524,7 +2598,7 @@ try {
                         onWidthCheck: d
                     }, {
                         name: "topLeft",
-                        id: "moatPx" + c.zr + "_" + t.ceil(1E6 * t.random()),
+                        id: "moatPx" + c.adNum + "_" + t.ceil(1E6 * t.random()),
                         target: c.aa,
                         container: c.aa.parentNode,
                         position: {
@@ -2534,7 +2608,7 @@ try {
                         onWidthCheck: d
                     }, {
                         name: "bottomRight",
-                        id: "moatPx" + c.zr + "_" + t.ceil(1E6 * t.random()),
+                        id: "moatPx" + c.adNum + "_" + t.ceil(1E6 * t.random()),
                         target: c.aa,
                         container: c.aa.parentNode,
                         position: {
@@ -2546,7 +2620,7 @@ try {
                 };
                 e.pixels.push({
                     name: "dentsuTopLeft",
-                    id: "moatPx" + c.zr + "_" + t.ceil(1E6 * t.random()),
+                    id: "moatPx" + c.adNum + "_" + t.ceil(1E6 * t.random()),
                     target: c.aa,
                     container: c.aa.parentNode,
                     position: {
@@ -2557,7 +2631,7 @@ try {
                 });
                 e.pixels.push({
                     name: "dentsuBottomRight",
-                    id: "moatPx" + c.zr + "_" + t.ceil(1E6 * t.random()),
+                    id: "moatPx" + c.adNum + "_" + t.ceil(1E6 * t.random()),
                     target: c.aa,
                     container: c.aa.parentNode,
                     position: {
@@ -2678,18 +2752,18 @@ try {
                 b.j.b.addEventCallback("adKilled", b.i.x, {
                     once: true,
                     condition: function(b) {
-                        return c.zr === b.zr
+                        return c.adNum === b.adNum
                     }
                 });
                 b.i.z(c.periscopeConfig) || (c.periscopeConfig = b.i.n(c));
-                c.periscopeManager = new b.i.aa(c.periscopeConfig,c.zr);
+                c.periscopeManager = new b.i.aa(c.periscopeConfig,c.adNum);
                 b.i.a = c.periscopeManager.insertSuccessful;
                 return c.periscopeManager.insertSucceeded
             }
             ;
             b.i.a = false;
             b.i.insertableFunc = function() {
-                return 1 === t.floor(100 * t.random()) ? !b.a.y() && (f || h || b.i.j) : !b.a.y() && !b.d.a && (f || h || b.i.j)
+                return 1 === t.floor(100 * t.random()) ? !b.a.y() && (f || h || b.i.j) : !b.a.y() && !b.d.hasANewTopWindow && (f || h || b.i.j)
             }
             ;
             b.i.ab = function(c) {
@@ -2905,14 +2979,14 @@ try {
                       , g = b.i.af(g)
                       , e = 0
                       , f = 0;
-                    this.config.positionTarget ? this.config.positionTargetWindow ? this.targetRect = new b.n.j(this.config.positionTarget,this.config.positionTargetWindow,null ,true) : (this.targetRect = new b.n.j(this.config.positionTarget,null ,null ,true),
-                    this.config.positionTargetWindow = this.targetRect.win) : (this.targetRect = this.targetRect ? new b.n.j(this.config.target,this.targetRect.win,null ,true) : new b.n.j(this.config.target,
+                    this.config.positionTarget ? this.config.positionTargetWindow ? this.targetRect = new b.n.getTargetRect(this.config.positionTarget,this.config.positionTargetWindow,null ,true) : (this.targetRect = new b.n.getTargetRect(this.config.positionTarget,null ,null ,true),
+                    this.config.positionTargetWindow = this.targetRect.win) : (this.targetRect = this.targetRect ? new b.n.getTargetRect(this.config.target,this.targetRect.win,null ,true) : new b.n.getTargetRect(this.config.target,
                     null ,null ,true),
-                    0 == this.targetRect.left && 0 == this.targetRect.right && 0 == this.targetRect.top && 0 == this.targetRect.bottom && "EMBED" == this.targetRect.el.nodeName && null  == this.targetRect.el.offsetParent && this.config.target.parentNode && (this.targetRect = new b.n.j(this.config.target.parentNode,null ,null ,true),
+                    0 == this.targetRect.left && 0 == this.targetRect.right && 0 == this.targetRect.top && 0 == this.targetRect.bottom && "EMBED" == this.targetRect.el.nodeName && null  == this.targetRect.el.offsetParent && this.config.target.parentNode && (this.targetRect = new b.n.getTargetRect(this.config.target.parentNode,null ,null ,true),
                     this.config.positionTarget = this.config.target.parentNode));
                     var e = b.n.n("left", this.targetRect.win), f = b.n.n("top", this.targetRect.win), m;
                     this.wrapperDiv && (m = this.wrapperDiv.offsetParent) && "BODY" !== m.nodeName ?
-                    this.offsetRect = this.offsetRect ? new b.n.j(m,this.offsetRect.win,null ,true) : new b.n.j(m,null ,null ,true) : this.offsetRect = {
+                    this.offsetRect = this.offsetRect ? new b.n.getTargetRect(m,this.offsetRect.win,null ,true) : new b.n.getTargetRect(m,null ,null ,true) : this.offsetRect = {
                         left: -e,
                         top: -f
                     };
@@ -2973,7 +3047,7 @@ try {
                 ;
                 this.kill = function() {
                     var c = this.getPixelElement()
-                      , g = b.a.t(c);
+                      , g = b.a.getParentWindow(c);
                     g && c && c.dataMoatTIDS && b.a.forEach(c.dataMoatTIDS, function(b) {
                         g.clearTimeout(b)
                     });
@@ -3023,7 +3097,7 @@ try {
                 this.element = this.targetDoc.getElementById(this.config.id);
                 if (!this.element)
                     return false;
-                var h = new b.n.j(this.element,null ,null ,true);
+                var h = new b.n.getTargetRect(this.element,null ,null ,true);
                 this.width = h.width;
                 this.height = h.height;
                 if (!this.updatePosition())
@@ -3635,7 +3709,7 @@ try {
                 b.r.b, {
                     once: true,
                     condition: function(b) {
-                        return c.zr == b.zr
+                        return c.adNum == b.adNum
                     }
                 });
                 b.r.c(c)
@@ -3644,9 +3718,9 @@ try {
             b.r.c = function(b, c) {
                 if (true === b.isSkin)
                     for (var g = 0; g < b.elements.length; g++)
-                        f(b.elements[g], b.zr + "-" + g, c);
+                        f(b.elements[g], b.adNum + "-" + g, c);
                 else
-                    f(b.aa, b.zr, c)
+                    f(b.aa, b.adNum, c)
             }
             ;
             b.r.d = function(c) {
@@ -3669,11 +3743,11 @@ try {
                 c.proxyAds || (c.proxyAds = []);
                 c.proxyAds.push({
                     aa: g,
-                    zr: c.zr
+                    adNum: c.adNum
                 });
                 !c.hasIframeListener &&
                 g.tagName && "iframe" === g.tagName.toLowerCase() && (c.hasIframeListener = true);
-                g[N] = c.zr;
+                g[N] = c.adNum;
                 b.r.c(c.proxyAds[c.proxyAds.length - 1]);
                 return c
             }
@@ -3691,8 +3765,8 @@ try {
             }
             var f = "undefined" !== typeof window.devicePixelRatio
               , h = f && t.round(1E3 * window.devicePixelRatio)
-              , e = b.d.a && f && "undefined" !== typeof window.innerHeight && "undefined" !== typeof window.outerHeight && t.round(window.devicePixelRatio * (b.d.c.outerHeight -
-            b.d.c.innerHeight))
+              , e = b.d.hasANewTopWindow && f && "undefined" !== typeof window.innerHeight && "undefined" !== typeof window.outerHeight && t.round(window.devicePixelRatio * (b.d.bestWindow.outerHeight -
+            b.d.bestWindow.innerHeight))
               , c = function() {
                 var b = false;
                 try {
@@ -3708,14 +3782,14 @@ try {
                 };
                 try {
                     h = c.aa.getBoundingClientRect();
-                    var v = d || c.WINDOW || b.a.t(c.aa)
-                      , g = b.d.ak(v)
-                      , k = b.n.l(h, g)
+                    var v = d || c.WINDOW || b.a.getParentWindow(c.aa)
+                      , g = b.d.getWindowRect(v)
+                      , k = b.n.intersect(h, g)
                       , u = v.mozInnerScreenX
                       , ja = v.mozInnerScreenY
                       , q = window.screenX
                       , A = window.screenY
-                      , T = b.n.l({
+                      , T = b.n.intersect({
                         left: k.left + u,
                         right: k.right + u,
                         top: k.top + ja,
@@ -3732,9 +3806,9 @@ try {
                         area: t,
                         percv: (T.right - T.left) * (T.bottom - T.top) / t
                     };
-                    m = b.n.g(e, c)
+                    m = b.n.getVisibleThreshold(e, c)
                 } catch (E) {}
-                h = b.n.c;
+                h = b.n.fullyVisibleThreshold;
                 "undefined" !== typeof e && "undefined" !== typeof m && (z.isVisible = e.percv >= m,
                 z.isFullyVisible = e.percv >= h,
                 z.percv = e.percv,
@@ -3781,7 +3855,7 @@ try {
                   , F = 0
                   , A = 0;
                 (new y).getTime();
-                var T = false, ka = false, mrc_1s = false, Ba = false, w, B, C, D = 0, G = 0, Ca = false, P = false, N = false, S, Z = 0, M = 0, O = 0, Y = false, da = false, V = false, la = false, W = false, aa = 0, X = false, ma = false, ea = false, ha = false, mrc = false, ia = false, qa = b.d.a, ta;
+                var T = false, ka = false, mrc_1s = false, Ba = false, w, B, C, D = 0, G = 0, Ca = false, P = false, N = false, S, Z = 0, M = 0, O = 0, Y = false, da = false, V = false, la = false, W = false, aa = 0, X = false, ma = false, ea = false, ha = false, mrc = false, ia = false, qa = b.d.hasANewTopWindow, ta;
                 if (0 === f)
                     var ba = "as"
                       , Q = "ag"
@@ -4120,7 +4194,7 @@ try {
                 }
             }
             function h() {
-                var c = b.d.c
+                var c = b.d.bestWindow
                   , e = c.document;
                 return {
                     y: void 0 !== c.pageYOffset ? c.pageYOffset : (e.documentElement || e.body.parentNode || e.body).scrollTop
@@ -4129,7 +4203,7 @@ try {
             b.o = {};
             var e = {};
             b.o.d = function() {
-                return Y ? b.d.ak(b.d.c).height : 750
+                return Y ? b.d.getWindowRect(b.d.bestWindow).height : 750
             }
             ;
             b.o.e = function() {
@@ -4141,11 +4215,11 @@ try {
             }
             ;
             b.o.g = function(c) {
-                var n = c.zr;
+                var n = c.adNum;
                 b.j.b.addEventCallback("adKilled", b.o.h, {
                     once: true,
                     condition: function(b) {
-                        return b.zr == c.zr
+                        return b.adNum == c.adNum
                     }
                 });
                 e[n] = e[n] ||
@@ -4154,7 +4228,7 @@ try {
                     isBigAd: false
                 };
                 if (b.n.isNewBrowser()) {
-                    var getViewableStateFunc = getTimeGuardedViewableStateFunc(b.n.f);
+                    var getViewableStateFunc = getTimeGuardedViewableStateFunc(b.n.getVisibleResult);
                     var h;
                     h = isIphoneOrIPod()
                       ? new VideoState(getViewableStateFunc, b.p.b, false, 0,"strict")
@@ -4173,7 +4247,7 @@ try {
                     d = new VideoState(b.u.a,b.p.b,true,5,"sframe"),
                     e[n].sframe = d;
                 b.j.b.zaxs("viewCounterStarted", c);
-                (b.a.ac() || b.a.ad()) && (n = b.o.i(c.zr)) &&
+                (b.a.ac() || b.a.ad()) && (n = b.o.i(c.adNum)) &&
                 n.addListener({
                     _wasAnyPixelInView: false,
                     onInViewTimeCount: function(d, e, f) {
@@ -4188,13 +4262,13 @@ try {
             }
             ;
             b.o.k = function(c, e, d) {
-                return (c || opt_counters) && e && d ? (c = b.o.l(c.zr, e)) && "function" == typeof c[d] && c[d]() : false
+                return (c || opt_counters) && e && d ? (c = b.o.l(c.adNum, e)) && "function" == typeof c[d] && c[d]() : false
             }
             ;
             b.o.j = function(c, n, d) {
-                var h = e[c.zr], m, r = b.d.x && h && !h.sframe;
+                var h = e[c.adNum], m, r = b.d.x && h && !h.sframe;
                 r || (r = b.d.z() && h && !h.sframe);
-                r && (e[c.zr].sframe = new VideoState(b.u.a,b.p.b,true,5,"sframe"),
+                r && (e[c.adNum].sframe = new VideoState(b.u.a,b.p.b,true,5,"sframe"),
                 b.j.b.zaxs("viewCounterStarted",
                 c));
                 for (var l in h)
@@ -4206,13 +4280,13 @@ try {
             b.o.m = function(c, e, d) {
                 "undefined" == typeof d && (d = false);
                 var f = 0;
-                f = !d && b.d.au() ? (c = c && "undefined" != typeof c.zr && b.o && b.o.n && b.o.n(c.zr)) && c.lax && c.lax.getInViewTime() || 0 : b.o.o(c);
+                f = !d && b.d.au() ? (c = c && "undefined" != typeof c.adNum && b.o && b.o.n && b.o.n(c.adNum)) && c.lax && c.lax.getInViewTime() || 0 : b.o.o(c);
                 return f >= e
             }
             ;
             b.o.o = function(c) {
                 var e = 0
-                  , d = c && "undefined" != typeof c.zr && b.o && b.o.n && b.o.n(c.zr);
+                  , d = c && "undefined" != typeof c.adNum && b.o && b.o.n && b.o.n(c.adNum);
                 d && (b.d.au() ? e = d.strict && d.strict.getInViewTime() || 0 : b.d.av() ? e = d.sframe && d.sframe.getInViewTime() || 0 : b.d.ax(c) && (e = d.pscope && d.pscope.getInViewTime() ||
                 0));
                 return e
@@ -4220,32 +4294,32 @@ try {
             ;
             getOTS = function(c, e) {
                 var d = hadVideo2SecOTS();
-                if (c && c.zr) {
-                  return d = e ?  b.o.k(c, e, d) : b.o.k(c, b.o.r(c.zr), d);
+                if (c && c.adNum) {
+                  return d = e ?  b.o.k(c, e, d) : b.o.k(c, b.o.r(c.adNum), d);
                 } else {
                   return null;
                 }
             }
             ;
             b.o.a = function(c, e) {
-                var d = b.o.n(c.zr);
+                var d = b.o.n(c.adNum);
                 return b.i && b.i.a && d && d.pscope && d.pscope[e ? "hadVideo2SecOTS" : "hadOTS"]()
             }
             ;
             b.o.c = function(c, e) {
-                var d = b.o.n(c.zr);
+                var d = b.o.n(c.adNum);
                 return b.i && b.i.a && d && d.pscope && d.pscope[e ? "hadDentsuVideoOTS" : "hadDentsuDisplayOTS"]()
             }
             ;
             b.o.b = function(c, e) {
-                var d = b.o && b.o.n(c.zr);
+                var d = b.o && b.o.n(c.adNum);
                 return b.i && b.i.a && d && d.pscope && d.pscope.getFullInviewTimeTotal() >=
                 e
             }
             ;
             b.o.s = function(c) {
                 var e = 0
-                  , d = c && "undefined" != typeof c.zr && b.o && b.o.n && b.o.n(c.zr);
+                  , d = c && "undefined" != typeof c.adNum && b.o && b.o.n && b.o.n(c.adNum);
                 d && (b.d.au() ? e = d.strict && d.strict.getFullInviewTimeTotal() || 0 : b.d.av() ? e = d.sframe && d.sframe.getFullInviewTimeTotal() || 0 : b.d.ax(c) && (e = d.pscope && d.pscope.getFullInviewTimeTotal() || 0));
                 return e
             }
@@ -4253,12 +4327,12 @@ try {
             b.o.t = function(c, e, d) {
                 "undefined" == typeof d && (d = false);
                 var f = 0;
-                f = !d && b.d.au() ? (c = c && "undefined" != typeof c.zr && b.o && b.o.n && b.o.n(c.zr)) && c.lax && c.lax.getInViewTime() || 0 : b.o.s(c);
+                f = !d && b.d.au() ? (c = c && "undefined" != typeof c.adNum && b.o && b.o.n && b.o.n(c.adNum)) && c.lax && c.lax.getInViewTime() || 0 : b.o.s(c);
                 return f >= e
             }
             ;
             b.o.h = function(b) {
-                delete e[b.zr]
+                delete e[b.adNum]
             }
             ;
             b.o.n =
@@ -4379,7 +4453,7 @@ try {
               , z = function() {
                 var c = 0;
                 return function() {
-                    var d = b.d.c
+                    var d = b.d.bestWindow
                       , e = d.document
                       , f = e.body
                       , d = (f.scrollTop || e.documentElement.scrollTop || d.pageYOffset || 0) / f.offsetHeight;
@@ -4495,7 +4569,7 @@ try {
                     b.d.am && 1400 >= b.d.am
                 },
                 audibleFullVisibleHalfDuration: function(c) {
-                    var d = c && b.o.i(c.zr)
+                    var d = c && b.o.i(c.adNum)
                       , d = d && c.video && c.video.getCounter(d.getLabel());
                     return -1 < c.ao.duration && d && d.get("groupmAudibleFullyVisIvt") > c.ao.duration / 2
                 },
@@ -4504,13 +4578,13 @@ try {
                         return false;
                     var d = false;
                     "number" == typeof c.ao.duration && !isNaN(c.ao.duration) && 0 < c.ao.duration && (d = t.min(15E3, c.ao.duration));
-                    var e = c && b.o.i(c.zr);
+                    var e = c && b.o.i(c.adNum);
                     c = e && c.video.getCounter(e.getLabel());
                     return d && c && c.get("groupmAudibleFullyVisIvt") >
                     .5 * d && "undefined" === typeof b.z.a.a
                 },
                 scroll_measurable: function(c) {
-                    return b.d.a
+                    return b.d.hasANewTopWindow
                 },
                 scroll: function(b) {
                     return "undefined" !== typeof w.z
@@ -4755,7 +4829,7 @@ try {
                     "3" == b.video.quartiles.ei)
                 },
                 avoc_audibleFullVisibleHalfDuration: function(c) {
-                    var d = c && b.o.i(c.zr)
+                    var d = c && b.o.i(c.adNum)
                       , d = d && c.video && c.video.getCounter(d.getLabel());
                     return c.reachedAvoc && -1 < c.ao.duration && d && d.get("groupmAudibleFullyVisIvt") > c.ao.duration / 2
                 },
@@ -4766,11 +4840,11 @@ try {
                     return c.get_duration() && b.o.m(c, .1 * c.get_duration(), true)
                 },
                 everAudibleVisible: function(c) {
-                    var d = c && b.o.i(c.zr);
+                    var d = c && b.o.i(c.adNum);
                     return (c = d && c.video.getCounter(d.getLabel())) && c.get("everAudibleAndVisible")
                 },
                 visNeverAud: function(c) {
-                    var d = c && b.o.i(c.zr)
+                    var d = c && b.o.i(c.adNum)
                       , d = d && c.video.getCounter(d.getLabel());
                     return c.video.reachedComplete && d && d.get("everVisible", false) && !d.get("everAudible", false)
                 },
@@ -4835,7 +4909,7 @@ try {
                   , x = b.y.c(c)
                   , z = h.initWidth || c.INITIAL_WIDTH
                   , v = h.initHeight || c.INITIAL_HEIGHT
-                  , q = c && b.o.i(c.zr)
+                  , q = c && b.o.i(c.adNum)
                   , w = q && c.video.getCounter(q.getLabel());
                 d = b.y.i(c, d);
                 var y = e ? {
@@ -4908,7 +4982,7 @@ try {
                 b.y.f(c);
                 b.y.g(c);
                 getViewableInfo(c);
-                var e = b.o.i(c.zr);
+                var e = b.o.i(c.adNum);
                 b.y.h(c, d);
                 c.get_duration();
                 b.y.c(c);
@@ -4927,7 +5001,7 @@ try {
             }
             ;
             b.y.g = function(c) {
-                c = b.o.n(c.zr);
+                c = b.o.n(c.adNum);
                 return c.strict && "undefined" !== typeof c.strict.timeToView2Sec ?
                 c.strict.timeToView2Sec : c.sframe && "undefined" !== typeof c.sframe.timeToView2Sec ? c.sframe.timeToView2Sec : c.pscope && "undefined" !== typeof c.pscope.timeToView2Sec ? c.pscope.timeToView2Sec : -1
             }
@@ -5022,7 +5096,7 @@ try {
             }
             ;
             b.y.p = function(c, d, e, f, m) {
-                "string" == typeof d ? (new b.d.c.Image).src = d : b.a.forEach(d, function(d) {
+                "string" == typeof d ? (new b.d.bestWindow.Image).src = d : b.a.forEach(d, function(d) {
                     var k = d.src, h = d.opt, n, r;
                     n = h && b.a.n(h, "xaxis") ? b.y.l(b.y.q(c, e)) : h && b.a.n(h, "newPixelData") ? b.y.l(b.y.d(c, e, true)) : b.y.l(b.y.d(c, e));
                     d.customQueryParams && (r = b.y.l(b.y.j(c, e)));
@@ -5033,13 +5107,13 @@ try {
                     m ? b.z.b(d + k + n, {
                         ga: true
                     })() : b.a.n(h, "dfp") ? (h = b.y.e(c),
-                    (new b.d.c.Image).src = d + k + "u=" + n + ";sz=1x1;ord=" + h + "?") : (new b.d.c.Image).src = d + k + n)
+                    (new b.d.bestWindow.Image).src = d + k + "u=" + n + ";sz=1x1;ord=" + h + "?") : (new b.d.bestWindow.Image).src = d + k + n)
                 })
             }
             ;
             b.y.r = function(c, d) {
                 l(c, "strictOts", function(c, e) {
-                    var f = b.d.c
+                    var f = b.d.bestWindow
                       , g = f.document.getElementsByTagName("script")[0]
                       , f = f.document.createElement("img");
                     f.src = d;
@@ -5098,7 +5172,7 @@ try {
                 var f;
                 d.Ord ? f = d.Ord : (f = b.d.o ? b.d.o : (new y).getTime(),
                 d.Ord = f);
-                (new b.d.c.Image(1,1)).src = e ? c : c + "&ord=" + f
+                (new b.d.bestWindow.Image(1,1)).src = e ? c : c + "&ord=" + f
             }
         })(q);
         (function(b) {
@@ -5168,7 +5242,7 @@ try {
                     e = 1;
                 else if (5 < e)
                     return;
-                var f = b.d.c && b.d.c.document && b.d.c.document.head;
+                var f = b.d.bestWindow && b.d.bestWindow.document && b.d.bestWindow.document.head;
                 if (f) {
                     c += "&callback=" + b.d.j + "." + d;
                     var k = document.createElement("script");
@@ -5513,7 +5587,7 @@ try {
             e([38, 40, 46, 44, 30, 38, 40, 47, 30]);
             var x = e([84, 41, 33, 26, 39, 45, 40, 38])
               , m = e([28, 26, 37, 37, 15, 33, 26, 39, 45, 40, 38])
-              , r = b.d.c
+              , r = b.d.bestWindow
               , v = r.document
               , z = v.body
               , q = r.navigator;
@@ -5560,7 +5634,7 @@ try {
                 }) : d.APPEND_MANUAL && b.a.forEach(F, function(e, f) {
                     b.a.n(d.APPEND_MANUAL, e) && (c = e in b.z.a ? c + ("&" + e + "=1") : c + ("&" + e + "=0"))
                 });
-                d.gb ? 0 == b.z.am && ((new b.d.c.Image).src = c) : d.gc ? 1 == b.z.am && ((new b.d.c.Image).src = c) : (new b.d.c.Image).src = c
+                d.gb ? 0 == b.z.am && ((new b.d.bestWindow.Image).src = c) : d.gc ? 1 == b.z.am && ((new b.d.bestWindow.Image).src = c) : (new b.d.bestWindow.Image).src = c
             }
             ;
             b.z.an = function(c, d) {
@@ -5748,7 +5822,7 @@ try {
                     return false
                 }
             }
-            function h(c) {
+            function Ad(c) {
                 var h = c.el
                   , d = c.url
                   , x = c.flashVars
@@ -5767,14 +5841,14 @@ try {
                 d && 0 !== d.toLowerCase().indexOf("http:") && 0 !== d.toLowerCase().indexOf("https:") && ("//" === d.substring(0, 2) ? d = window.location.protocol + d : "/" === d[0] ? d = window.location.protocol + "//" + window.location.host + d : (z = window.location.pathname.split("/").slice(0, -1).join("/"),
                 d = window.location.protocol + "//" + window.location.host + "/" + z + (z ? "/" : "") + d));
                 "IFRAME" !== h.tagName && "IMG" !== h.tagName && -1 === d.indexOf("googlesyndication") && (d = d.split("?")[0]);
-                this.zr = m.adNum;
+                this.adNum = m.adNum;
                 this.yg = b.a.ce();
                 b.k.g(this.yg, b.d.l.a);
-                B[this.zr] = this;
-                b.b.d(this.zr, [h]);
+                B[this.adNum] = this;
+                b.b.d(this.adNum, [h]);
                 this.ae = d;
                 this.aa = h;
-                this.WINDOW = b.a.t(this.aa);
+                this.WINDOW = b.a.getParentWindow(this.aa);
                 "undefined" === typeof this._calcVideoBasedOnContainer && (this._calcVideoBasedOnContainer = "EMBED" === h.nodeName && h.parentNode && "OBJECT" === h.parentNode.nodeName && 0 == h.offsetWidth && 0 == h.offsetHeight ? true : false);
                 this._calcVideoBasedOnContainer ? (this.INITIAL_WIDTH = h.parentNode.offsetWidth,
                 this.INITIAL_HEIGHT = h.parentNode.offsetHeight) : (this.INITIAL_WIDTH = h.offsetWidth,
@@ -5795,7 +5869,7 @@ try {
                 }
                 ;
                 b.p.d(this);
-                b.y.s(this.zr, this.ao);
+                b.y.s(this.adNum, this.ao);
                 this.ag = x;
                 this.ah = void 0;
                 this.ai = 0;
@@ -5899,8 +5973,8 @@ try {
                         return r(c, f, x, m);
                     new y;
                     r.em = true;
-                    B[r.zr] = r;
-                    c[N] = r.zr;
+                    B[r.adNum] = r;
+                    c[N] = r.adNum;
                     c[D] = true;
                     r.aa = c;
                     r.INITIAL_WIDTH = c.offsetWidth;
@@ -5920,7 +5994,7 @@ try {
                     b.i.y(r));
                     return r
                 }
-                return new h(v)
+                return new Ad(v)
             }
             ;
             b.b.c = function(c) {
@@ -5929,13 +6003,13 @@ try {
                 (new y).getTime();
                 c.dd = true;
                 b.o.g(c);
-                b.d.a || b.ab.a.a();
+                b.d.hasANewTopWindow || b.ab.a.a();
                 if (c._calcVideoBasedOnContainer) {
                     var e = {
                         aa: c.aa.parentNode,
-                        zr: c.zr
+                        adNum: c.adNum
                     };
-                    c.aa.parentNode[N] = c.zr;
+                    c.aa.parentNode[N] = c.adNum;
                     b.r.a(e)
                 } else
                     b.r.a(c);
@@ -6007,7 +6081,7 @@ try {
             ;
             b.b.j = function(b) {
                 b.ep = true;
-                delete B[b.zr];
+                delete B[b.adNum];
                 b.aa = null
             }
             ;
@@ -6122,7 +6196,7 @@ try {
                 var n = e;
                 e = 0;
                 for (var v = [], g = function(c) {
-                    return c && b.e.a(c)
+                    return c && b.e.getWindowFrameElement(c)
                 }
                 , k = function(b) {
                     return b && b.parentElement
@@ -6161,7 +6235,7 @@ try {
                             e++
                         }
                     else if ("...../" === A) {
-                        n = b.d.c && b.d.c.document && b.d.c.document.body;
+                        n = b.d.bestWindow && b.d.bestWindow.document && b.d.bestWindow.document.body;
                         if (!n)
                             return false;
                         e++
@@ -6434,7 +6508,7 @@ try {
             ;
             b.ad.m = function(e) {
                 if (true !== e.em) {
-                    delete B[e.zr];
+                    delete B[e.adNum];
                     b.a.a(e.cc);
                     e.periscopeManager && e.periscopeManager.killAllPixels();
                     var c;
@@ -6467,7 +6541,7 @@ try {
                   , r = b.ad.e;
                 if ("undefined" === typeof e)
                     return false;
-                b.d.f && "HEAD" === e.tagName && (d = e.parentNode,
+                b.d.hasParentWindow && "HEAD" === e.tagName && (d = e.parentNode,
                 "HTML" === d.tagName && (d = d.getElementsByTagName("body"),
                 0 < d.length && (e = d[0])));
                 var l;
@@ -6476,8 +6550,8 @@ try {
                 if (d = b.e.d(e))
                     if (l = b.ad.g(d, c, f))
                         return l;
-                return !Ia && !d || !(d = d || b.e.d(e)) || b.d.a &&
-                "BODY" === d.nodeName && b.a.t(d) == b.d.c || !(l = r(d, c, f)) && !(l = m(d, c, f, h)) ? false : l
+                return !Ia && !d || !(d = d || b.e.d(e)) || b.d.hasANewTopWindow &&
+                "BODY" === d.nodeName && b.a.getParentWindow(d) == b.d.bestWindow || !(l = r(d, c, f)) && !(l = m(d, c, f, h)) ? false : l
             }
             ;
             b.ad.f = f;
@@ -6525,8 +6599,8 @@ try {
                     f.startTime = b.d.o;
                 if ("undefined" === typeof f.rand || h)
                     f.rand = t.floor(t.random() * t.pow(10, 12));
-                "undefined" === typeof f.adNum && (f.adNum = w.zr,
-                w.zr++);
+                "undefined" === typeof f.adNum && (f.adNum = w.adNum,
+                w.adNum++);
                 f.duration = t.round(f.duration)
             }
             ;
@@ -6708,7 +6782,7 @@ try {
             }
             function f(e, c) {
                 e.j = 25 == c ? "string" == typeof b.d.b && b.d.b.slice(0, 500) || "" : b.a.h(b.d.b);
-                if (!b.d.a) {
+                if (!b.d.hasANewTopWindow) {
                     var f = b.a.f();
                     f && (e.lp = f)
                 }
@@ -6744,7 +6818,7 @@ try {
                     m.cu = ra;
                     m.ll = b.d.ad || 0;
                     b.a.bh(m, "lm", b.d.ae);
-                    m.ln = b.d.f ? 1 : 0;
+                    m.ln = b.d.hasParentWindow ? 1 : 0;
                     m.r = b.i.i;
                     b.a.az(m, b.focus.getQueryString());
                     b.f.k(c, m);
@@ -6816,10 +6890,10 @@ try {
                     c.cb = Y ? 1 : 0;
                     c.ll = b.d.ad || 0;
                     b.a.bh(c, "lm", b.d.ae);
-                    c.ln = b.d.f ? 1 : 0;
+                    c.ln = b.d.hasParentWindow ? 1 : 0;
                     c.r = b.i.i;
                     b.a.az(c, b.h.c());
-                    b.d.a && (c.gh = 1);
+                    b.d.hasANewTopWindow && (c.gh = 1);
                     b.d.af();
                     c.qa = b.d.ai;
                     c.qb = b.d.aj;
@@ -6854,7 +6928,7 @@ try {
                             d = !b.focus.pageIsVisible() && e && e.counters && e.counters.strictDwell &&
                             0 == e.counters.strictDwell.tCur && 21 == c.e;
                             m = "0" != b.a.o();
-                            if (e.periscopeManager.measurable || !b.d.a && d && m)
+                            if (e.periscopeManager.measurable || !b.d.hasANewTopWindow && d && m)
                                 c.ch = 1;
                             e.periscopeManager.fullyMeasurable && e.ao && 1 != e.ao.skin && (c.ga = 1)
                         } else
@@ -6863,9 +6937,9 @@ try {
                         c.fg = 0 <= d ? d : 0)
                     } else
                         c.ch = 0;
-                    b.a.az(c, b.o.u(e.zr, c));
+                    b.a.az(c, b.o.u(e.adNum, c));
                     b.a.az(c, b.focus.getQueryString());
-                    b.a.az(c, b.y.v(e.zr));
+                    b.a.az(c, b.y.v(e.adNum));
                     b.a.az(c, e.counters.getQs());
                     e.video.getQs(c);
                     b.a.bh(c, "ai", w.z);
@@ -6897,7 +6971,7 @@ try {
                     c.ab = e.an;
                     c.ac = 1;
                     c.fd = "1";
-                    c.kt = b.o.r(e.zr);
+                    c.kt = b.o.r(e.adNum);
                     c.it = b.ad.q;
                     e.bi = e.bg;
                     e.bm = e.bk;
@@ -7107,7 +7181,7 @@ try {
                     var c = f.aa
                       , l = b.a.v(c, 5)
                       , d = l && (6 == l.length || 1 <= l.length && "HTML" === l[l.length - 1].nodeName);
-                    e = e || f.WINDOW || b.a.t(c);
+                    e = e || f.WINDOW || b.a.getParentWindow(c);
                     return !(c && e && d) || c.ownerDocument && c.ownerDocument.body && !c.ownerDocument.body.contains(c) ? false : true
                 } catch (q) {
                     return false
@@ -7216,11 +7290,17 @@ try {
             b.p.b = function(f) {
                 var e, c;
                 e = f._calcVideoBasedOnContainer ? f.aa.parentNode : f.aa;
-                f.elementRect || (f.currentWidth = e.offsetWidth,
-                f.currentHeight = e.offsetHeight);
-                e = f.currentWidth;
-                c = f.currentHeight;
-                return 3 > e || 3 > c || b.focus.pageIsPrerendered() || !f.video.isPlaying() && !f.video.pausedByMoat ? true : false
+                if (f.elementRect) {
+                  f.currentWidth = e.offsetWidth;
+                  f.currentHeight = e.offsetHeight;
+                }
+                return 3 > f.currentWidth ||
+                  3 > f.currentHeight ||
+                  b.focus.pageIsPrerendered()
+                  || !f.video.isPlaying()
+                  && !f.video.pausedByMoat
+                  ? true
+                  : false
             }
             ;
             b.p.o = function(b) {
@@ -7559,7 +7639,7 @@ try {
                         f = b.n.o(f.aa);
                         var e = f.rect;
                         f = b.n.m(f.visibleRect, h.el, h.et);
-                        h = b.n.l(f, {
+                        h = b.n.intersect(f, {
                             left: h.vl,
                             right: h.vr,
                             top: h.vt,
@@ -7579,9 +7659,9 @@ try {
                     if (e = h && h()) {
                         var c = f.aa;
                         h = c.getBoundingClientRect();
-                        f = f.WINDOW || b.a.t(c);
+                        f = f.WINDOW || b.a.getParentWindow(c);
                         f = b.n.k(f);
-                        f = b.n.l(h, f);
+                        f = b.n.intersect(h, f);
                         f = b.n.m(f, e.self.l, e.self.t);
                         var l;
                         l = e.self;
@@ -7599,7 +7679,7 @@ try {
                             bottom: Number(e.win.b)
                         };
                         f = b.n.m(f, c, l);
-                        e = b.n.l(f, e);
+                        e = b.n.intersect(f, e);
                         h = 100 * (e.right - e.left) * (e.bottom - e.top) / ((h.width || h.right - h.left) * (h.height || h.bottom -
                         h.top))
                     } else
@@ -7634,7 +7714,7 @@ try {
                         l.amp.started = true,
                         b.j.b.addEventCallback("adKilled", b.ag.c, {
                             condition: function(b) {
-                                return l.zr == b.zr
+                                return l.adNum == b.adNum
                             },
                             once: true
                         });
@@ -7742,7 +7822,7 @@ try {
                 this.audibleMeasurable = false;
                 this.cbPrefix = "liverailjsvp58397284";
                 this.notifyCB = "liverailjsvp58397284_notifyMoatVideo";
-                this.canMeasurePageLoad = b.d.a && "undefined" !== typeof window.performance;
+                this.canMeasurePageLoad = b.d.hasANewTopWindow && "undefined" !== typeof window.performance;
                 this.receivedAdImpEvent = this.videoIsFullscreen = false;
                 this.quartileDeltas = {};
                 this.adRemainingTimeDuration = void 0;
@@ -7750,25 +7830,25 @@ try {
                 this.getCounter = function(b) {
                     var c;
                     this.counters[b] ? c = this.counters[b] :
-                    (c = new h(b),
+                    (c = new Ad(b),
                     this.counters[b] = c);
                     return c
                 }
                 ;
                 this.maxContinuousAudibleTime = function() {
-                    var c = b.o.r(this.ad.zr)
+                    var c = b.o.r(this.ad.adNum)
                       , c = this.getCounter(c);
                     return c.max("maxContinuousAudibleTime", c.get("continuousAudibleTime"))
                 }
                 ;
                 this.maxContinuousFullVisAudibleTime = function() {
-                    var c = b.o.r(this.ad.zr)
+                    var c = b.o.r(this.ad.adNum)
                       , c = this.getCounter(c);
                     return c.max("maxContinuousFullVisAudibleTime", c.get("continuousFullyVisAudibleTime"))
                 }
                 ;
                 this.groupmMaxContinuousFullVisAudibleTime = function() {
-                    var c = b.o.r(this.ad.zr)
+                    var c = b.o.r(this.ad.adNum)
                       , c = this.getCounter(c);
                     return c.max("groupmMaxContinuousFullVisAudibleTime",
                     c.get("groupmContinuousFullyVisAudibleTime"))
@@ -7800,7 +7880,7 @@ try {
                 }
                 ;
                 this.performPoalCheck = function() {
-                    var c = b.o.i(this.ad.zr);
+                    var c = b.o.i(this.ad.adNum);
                     this.poalEnabled && this.disablePoalOnVis && c && c.hadVideo2SecOTS() &&
                     (this.poalEnabled = false,
                     1 == this.state && this.pausedByMoat && (this.pausedByMoat = false,
@@ -7852,7 +7932,7 @@ try {
                 }
                 ;
                 this.onLoop = function() {
-                    var c = b.o.i(this.ad.zr);
+                    var c = b.o.i(this.ad.adNum);
                     c && (!this.hadVideoOTS && 5E3 <= c.getInViewTime() &&
                     (this.hadVideoOTS = true,
                     b.s.a(this.ad, {
@@ -7995,7 +8075,7 @@ try {
                         f = true;
                         this.state = 0;
                         b.j.b.addEventCallback("viewCounterStarted", function(c) {
-                            var d = b.o.i(c.zr);
+                            var d = b.o.i(c.adNum);
                             d && d.addListener(c.video)
                         });
                         b.b.c(this.ad);
@@ -8042,7 +8122,7 @@ try {
                         this.ad.ao.duration = d,
                         this.durationMeasurable = f = true);
                         this.state = 0;
-                        var q = b.o.n(this.ad.zr);
+                        var q = b.o.n(this.ad.adNum);
                         d = false;
                         l = true;
                         q.strict ? d = q.strict.visible() : q.pscope ? b.i && b.i.a || b.h && b.h.a() ? d = q.pscope.visible() : l = false : l = false;
@@ -8104,7 +8184,7 @@ try {
                 this.getGroupMQs = function() {
                     var c = [];
                     if (this.durationMeasurable) {
-                        var d = b.o.i(this.ad.zr)
+                        var d = b.o.i(this.ad.adNum)
                           , e = d && d.getFullInviewTimeTotal && d.getFullInviewTimeTotal()
                           , f = d && d.getInViewTime &&
                         d.getInViewTime()
@@ -8125,7 +8205,7 @@ try {
                 ;
                 this.getQs = function(c) {
                     data = c || {};
-                    var d = (c = b.o.i(this.ad.zr)) &&
+                    var d = (c = b.o.i(this.ad.adNum)) &&
                     this.getCounter(c.getLabel());
                     this.receivedAdImpEvent && (data.fc = "1");
                     for (var e = this.getGroupMQs(), f = 0; f < e.length; f++)
@@ -8213,7 +8293,7 @@ try {
                 b.j.b.addEventCallback("adKilled", this.remove, {
                     once: true,
                     condition: function(b) {
-                        return e.zr == b.zr
+                        return e.adNum == b.adNum
                     }
                 })
             }
@@ -8317,7 +8397,7 @@ try {
             b.v.c = 242500;
             b.v.d = 1;
             b.v.e = function(l) {
-                return b.d.a || b.h && b.h.a && b.h.a() || b.i && b.i.a && l && l.periscopeManager && l.periscopeManager.fullyMeasurable
+                return b.d.hasANewTopWindow || b.h && b.h.a && b.h.a() || b.i && b.i.a && l && l.periscopeManager && l.periscopeManager.fullyMeasurable
             }
             ;
             b.v.f = function(l) {
@@ -8358,7 +8438,7 @@ try {
             b.v.a = function(l) {
                 if (!l || l.SENT_FIT && l.et || !b.v.e(l))
                     return false;
-                var f, h, e = b.o.r(l.zr);
+                var f, h, e = b.o.r(l.adNum);
                 l.SENT_FIT || (f = b.o.k(l, e, "hadFIT"));
                 l.et || (h = b.o.k(l, e, "hadFullOTS"));
                 if (f || h)
@@ -8501,7 +8581,7 @@ try {
             var l = false;
             b.ab.a.a = function() {
                 var f = b.ab.e();
-                b.ab.a.c || b.d.a || (f = b.ah.p("moatframe", "check", f, function(f) {
+                b.ab.a.c || b.d.hasANewTopWindow || (f = b.ah.p("moatframe", "check", f, function(f) {
                     (f = b.a.at(f.msgData.data)) && f.available && !b.ab.a.c && (b.d.x = true,
                     b.ab.a.c = true,
                     f = "MoatFrame#geom#" + (new y).getTime(),
@@ -8532,7 +8612,7 @@ try {
             }
             ;
             b.ab.i = function() {
-                return b.d.a
+                return b.d.hasANewTopWindow
             }
             ;
             b.ab.j = function(f) {
@@ -8626,7 +8706,7 @@ try {
             }
             ;
             b.ab.c.ping = function(f) {
-                !b.d.a && b.d.ar() && b.ab.a.a()
+                !b.d.hasANewTopWindow && b.d.ar() && b.ab.a.a()
             }
             ;
             b.ab.c.check = function(f) {

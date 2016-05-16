@@ -101,21 +101,23 @@ try {
             }
             ;
             b.a.k = function() {
-                var g = b.a.l();
+                var g = b.a.getIEOrNetscapeVersion();
                 return 5 === g || 6 === g || 7 === g
             }
             ;
-            b.a.l = function() {
-                if (!navigator)
+            b.a.getIEOrNetscapeVersion = function() {
+                if (!navigator) {
                     return null ;
-                var b;
-                b = navigator.userAgent;
-                return "Microsoft Internet Explorer" == navigator.appName ? parseInt(b.replace(/^.*MSIE (\d+).*$/, "$1"), 10) : "Netscape" == navigator.appName &&
-                (b = b.match(/(?:Trident\/.*rv:|MSIE )(\d+)/)) ? parseInt(b[1], 10) : null
+                }
+                var b = navigator.userAgent;
+                return "Microsoft Internet Explorer" == navigator.appName
+                  ? parseInt(b.replace(/^.*MSIE (\d+).*$/, "$1"), 10)
+                  : "Netscape" == navigator.appName &&
+                    (b = b.match(/(?:Trident\/.*rv:|MSIE )(\d+)/)) ? parseInt(b[1], 10) : null
             }
             ;
-            b.a.m = function() {
-                return null  != b.a.l()
+            b.a.isIEOrNetscape = function() {
+                return null  != b.a.getIEOrNetscapeVersion()
             }
             ;
             b.a.n = function(g, k) {
@@ -264,7 +266,8 @@ try {
                 return d
             }
             ;
-            b.a.y =
+            // is portable devices
+            b.a.isPortableDevice =
             function() {
                 return null  !== /iPad|iPhone|iPod|Silk|Kindle|Android|BlackBerry|PlayBook|BB10|Windows Phone|SpreadTrum|MAUI/.exec(navigator && navigator.userAgent || "")
             }
@@ -572,7 +575,7 @@ try {
             }
             ;
             b.a.bd = function(g) {
-                if (w.yh.yj() && !b.a.y())
+                if (w.yh.yj() && !b.a.isPortableDevice())
                     try {
                         var k = w.yh.yk(g, b.d.protocol)
                           , c = '<object type="application/x-shockwave-flash" classid="clsid:d27cdb6e-ae6d-11cf-96b8-444553540000" width="1" height="1" id="moatMessageSender' + w.yh.xq() +
@@ -591,7 +594,7 @@ try {
             }
             ;
             b.a.bf = function(g) {
-                if (w && w.yh && w.yh.qa && w.yh.qa() && !b.a.y())
+                if (w && w.yh && w.yh.qa && w.yh.qa() && !b.a.isPortableDevice())
                     try {
                         var k = w.yh.qb(g, b.d.protocol)
                           , c = '<object type="application/x-shockwave-flash" classid="clsid:d27cdb6e-ae6d-11cf-96b8-444553540000" width="1" height="1" id="moatCap"><param name="allowScriptAccess" value="always" /><param name="allowFullScreen" value="false" /><param name="movie" value="' +
@@ -954,7 +957,7 @@ try {
                 if (b.a.br(c))
                     return k.toString = c,
                     k.toString();
-                if (b.d.g && 8 >= b.a.l())
+                if (b.d.g && 8 >= b.a.getIEOrNetscapeVersion())
                     return k.toString();
                 var c = g || window
                   , d = c.document.createElement("IFRAME");
@@ -1169,7 +1172,7 @@ try {
             b.d.l.a || (b.d.l.a = t.floor(t.random() * t.pow(10, 12)));
             b.d.m = 0 < Object.prototype.toString.call(window.HTMLElement).indexOf("Constructor");
             b.d.n = -1 !== navigator.userAgent.toLowerCase().indexOf("firefox");
-            b.d.g = b.a.m();
+            b.d.g = b.a.isIEOrNetscape();
             b.d.o = (new y).getTime();
             b.d.p = !!window.opera || 0 <= navigator.userAgent.indexOf(" OPR/");
             b.d.q = false;
@@ -1356,7 +1359,7 @@ try {
             b.d.hasParentWindow = window != window.parent;
             var isParentWindowAnOldWindow = b.e.isOldWindow(window.parent);
             b.d.hasANewParentWindow = b.d.hasParentWindow && !isParentWindowAnOldWindow;
-            b.d.ac = b.a.y();
+            b.d.ac = b.a.isPortableDevice();
             b.d.hasANewTopWindow = !isParentWindowAnOldWindow && !b.e.isOldWindow(window.top);
             b.d.bestWindow = b.d.hasANewTopWindow ? window.top : b.d.hasANewParentWindow ? window.parent : window;
             b.a.ae().isInApp && (b.d.hasANewTopWindow = b.a.al() || b.a.aj());
@@ -2265,7 +2268,7 @@ try {
                 var visibleRect;
                 for (var f = 0; f < nestedFrameElementsRect.length; f++) {
                     var n = nestedFrameElementsRect[f];
-                    if (f === 0) {
+                    if (f === 1) {
                       visibleRect = n;
                     } else {
                       visibleRect.changeReferenceFrame(n);
@@ -2519,7 +2522,7 @@ try {
         })(q);
         (function(b) {
             b.i = {};
-            var l = b.a.l()
+            var l = b.a.getIEOrNetscapeVersion()
               , f = null  !== l
               , h = -1 !== navigator.userAgent.indexOf("Chrome")
               , e = false
@@ -2763,7 +2766,7 @@ try {
             ;
             b.i.a = false;
             b.i.insertableFunc = function() {
-                return 1 === t.floor(100 * t.random()) ? !b.a.y() && (f || h || b.i.j) : !b.a.y() && !b.d.hasANewTopWindow && (f || h || b.i.j)
+                return 1 === t.floor(100 * t.random()) ? !b.a.isPortableDevice() && (f || h || b.i.j) : !b.a.isPortableDevice() && !b.d.hasANewTopWindow && (f || h || b.i.j)
             }
             ;
             b.i.ab = function(c) {
@@ -3430,91 +3433,132 @@ try {
         })(q);
         (function(b) {
             function l(c) {
-                b.focus.pageIsPrerendered() || b.g.f(document, m, l, "pr")
+                b.focus.pageIsPrerendered() || b.g.f(document, visibilitychangeAPI, l, "pr")
             }
-            function f(b) {
-                "undefined" == typeof n && (n = b)
+            function setFocusMethod(method) {
+              if ("undefined" == typeof focusMethod) {
+                 focusMethod = method;
+              }
             }
             b.focus = {};
-            var h =
-            navigator.userAgent, h = -1 < h.indexOf("Safari") && -1 == h.indexOf("Chrome") && -1 == h.indexOf("Chromium") && !b.a.y(), e = b.a.m() && !b.a.y(), c = "undefined" !== typeof document.hasFocus, n, d = {
+            var agent = navigator.userAgent;
+            var isSafariNotOnPortableDevice = false;
+            if (agent.indexOf('Safari') > -1 && agent.indexOf('Chrome') == -1
+                && agent.indexOf('Chromium') == -1) {
+              isSafariNotOnPortableDevice = !b.a.isPortableDevice();
+            }
+            var isIEOrNetscapeNotOnPortableDevice = b.a.isIEOrNetscape() && !b.a.isPortableDevice();
+            var supportHasFocusFunc = "undefined" !== typeof document.hasFocus;
+            var focusMethod;
+            var d = {
                 visible: 0,
                 hidden: 1,
                 prerender: 2
-            }, x, m, r, z;
-            "undefined" !== typeof document.hidden ? (x = "hidden",
-            m = "visibilitychange") : "undefined" !== typeof document.mozHidden ? (x = "mozHidden",
-            m = "mozvisibilitychange") : "undefined" !== typeof document.msHidden ? (x = "msHidden",
-            m = "msvisibilitychange") : "undefined" !== typeof document.webkitHidden && (x = "webkitHidden",
-            m = "webkitvisibilitychange");
+            };
+            var hiddenAPI, visibilitychangeAPI, visibilityStateAPI, isHiddenAPIDefined;
+
+            if ("undefined" !== typeof document.hidden) {
+              hiddenAPI = "hidden";
+              visibilitychangeAPI = "visibilitychange";
+            } else if ("undefined" !== typeof document.mozHidden) {
+              hiddenAPI = "mozHidden";
+              visibilitychangeAPI = "mozvisibilitychange";
+            } else if ("undefined" !== typeof document.msHidden) {
+              hiddenAPI = "msHidden";
+              visibilitychangeAPI = "msvisibilitychange";
+            } else if ("undefined" !== typeof document.webkitHidden) {
+              hiddenAPI = "webkitHidden";
+              visibilitychangeAPI = "webkitvisibilitychange";
+            }
+
             for (var v = ["v", "mozV", "msV", "webkitV"], g = 0; g < v.length; g++) {
                 var k = v[g] + "isibilityState";
                 if ("undefined" !== typeof document[k]) {
-                    r = k;
+                    visibilityStateAPI = k;
                     break
                 }
             }
-            z = "undefined" !== typeof x;
-            var u, ja;
-            "undefined" !== typeof window.requestAnimationFrame ? u = "requestAnimationFrame" : "undefined" !== typeof window.webkitRequestAnimationFrame && (u = "webkitRequestAnimationFrame");
-            ja = h && "string" == typeof u && !z;
-            var F = (new y).getTime();
-            ja && function ka() {
-                F = (new y).getTime();
-                window[u](ka)
-            }();
+
+            isHiddenAPIDefined = "undefined" !== typeof hiddenAPI;
+            var rafAPI, rafAvailable;
+            if ("undefined" !== typeof window.requestAnimationFrame) {
+              rafAPI = "requestAnimationFrame";
+            } else if ("undefined" !== typeof window.webkitRequestAnimationFrame) {
+              rafAPI = "webkitRequestAnimationFrame";
+            }
+            rafAvailable = isSafariNotOnPortableDevice && "string" == typeof rafAPI && !isHiddenAPIDefined;
+            var lastFrameRefreshTime = new Date().getTime();
+            if (rafAvailable) {
+              function ka() {
+                  lastFrameRefreshTime = (new y).getTime();
+                  window[rafAPI](ka)
+              }();
+            }
             b.focus.getFocusMethod = function() {
-                return n
+                return focusMethod;
             }
             ;
-            b.focus.visibilitychange = m;
+            b.focus.visibilitychange = visibilitychangeAPI;
             b.focus.setFocusListeners = function() {}
-            ;
             b.focus.getQueryString = function(b) {
                 b = {};
-                b.em = n;
+                b.em = focusMethod;
                 A && (b.eo = 1);
-                "undefined" != typeof r && (b.en = d[document[r]]);
+                if ("undefined" != typeof visibilityStateAPI) {
+                  b.en = d[document[visibilityStateAPI]];
+                }
                 return b
             }
             ;
             b.focus.supportsPageVisAPI = function() {
-                return z
+                return isHiddenAPIDefined;
             }
             ;
             b.focus.checkFocus = function() {
-                if (b.focus.supportsPageVisAPI())
-                    return f(0),
-                    !document[x];
-                if (ja)
-                    return f(1),
-                    100 > (new y).getTime() - F;
-                if (e && c)
-                    return f(2),
-                    document.hasFocus();
-                f(3);
+                if (b.focus.supportsPageVisAPI()) {
+                    setFocusMethod(0);
+                    return !document[hiddenAPI];
+                }
+                if (rafAvailable) {
+                    setFocusMethod(1);
+                    return 100 > new Date().getTime() - lastFrameRefreshTime;
+                }
+                if (isIEOrNetscapeNotOnPortableDevice && supportHasFocusFunc) {
+                    setFocusMethod(2);
+                    return document.hasFocus();
+                }
+                setFocusMethod(3);
                 return true
             }
             ;
             _lastFocusState = false;
             b.focus.pageIsVisible = function() {
-                var c = b.focus.checkFocus();
-                if (_lastFocusState !=
-                c && w && w.swde)
+                var focusState = b.focus.checkFocus();
+                if (_lastFocusState != focusState && w && w.swde) {
                     try {
-                        w.swde.zaxs("focusStateChange", c)
+                        w.swde.zaxs("focusStateChange", focusState)
                     } catch (g) {}
-                return _lastFocusState = c
+                }
+                _lastFocusState = focusState;
+                return _lastFocusState;
             }
             ;
             b.focus.pageIsPrerendered = function() {
-                return "undefined" !== typeof r ? "prerender" == document[r] : false
+                // If the page is being prepared by the browser in a background
+                // tab but not fully loaded then the visibilityState may be
+                // 'prerender'. Once fully loaded it will change to 'hidden' or
+                // 'visible'. When the user closes the tab, the visibilityState
+                // should be 'unloaded' while the page is being removed from
+                // memory.
+                return "undefined" !== typeof visibilityStateAPI
+                  ? "prerender" == document[visibilityStateAPI]
+                  : false
             }
             ;
             b.focus.pageIsVisible();
-            b.focus.pageIsPrerendered() && (b.g.e(document, m, l, "pr"),
+            b.focus.pageIsPrerendered() && (b.g.e(document, visibilitychangeAPI, l, "pr"),
             b.j.b.addEventCallback("allLocalAdsKilled", function() {
-                b.g.f(document, m, l, "pr")
+                b.g.f(document, visibilitychangeAPI, l, "pr")
             }, {
                 once: true
             }));
@@ -3841,7 +3885,7 @@ try {
                     return viewableState;
                 }
             }
-            function VideoState(getViewableStateFunc, e, d, f, m) {
+            function VideoState(getViewableStateFunc, isPhysicallyVisible, needPageVisibleCheck, f, m) {
                 function r(b) {
                     return "number" === typeof b ? b : b.type
                 }
@@ -4022,6 +4066,7 @@ try {
                     return t.max(0, A)
                 }
                 ;
+                // k is the current ad object
                 this.update = function(k, r, u) {
                     var y = v || 0
                       , G = g || 0
@@ -4037,24 +4082,23 @@ try {
                       , I = H.isDentsuVisible
                       , K = H.percv && 0 < H.percv;
                     S = H.percv;
-                    var J = e(k),
+                    var isPhysicallyVisible = isPhysicallyVisible(k),
                     L;
                     L = (L = k && k.video && k.video.isLargeVideoPlayer) ? (ea = L && k.video.isLargeVideoPlayer(k)) ? .8 <= H.percv : .98 <= H.percv : .98 <= H.percv;
-                    var R;
-                    R = !d || b.focus.pageIsVisible() || k.video.videoIsFullscreen;
+                    var isPageVisible = !needPageVisibleCheck || b.focus.pageIsVisible() || k.video.videoIsFullscreen;
                     if (k && k.video) {
-                      J = k.video.videoIsFullscreen ? false : J;
-                      currentVisible = (currentVisible || k.video.videoIsFullscreen) && R && !J;
-                      ca = (ca || k.video.videoIsFullscreen) && R && !J;
-                      K = (K || k.video.videoIsFullscreen) && R && !J;
-                      la = (I || k.video.videoIsFullscreen) && R && !J;
-                      ma = (L || k.video.videoIsFullscreen) && R && !J;
+                      isPhysicallyVisible = k.video.videoIsFullscreen ? false : isPhysicallyVisible;
+                      currentVisible = (currentVisible || k.video.videoIsFullscreen) && isPageVisible && !isPhysicallyVisible;
+                      ca = (ca || k.video.videoIsFullscreen) && isPageVisible && !isPhysicallyVisible;
+                      K = (K || k.video.videoIsFullscreen) && isPageVisible && !isPhysicallyVisible;
+                      la = (I || k.video.videoIsFullscreen) && isPageVisible && !isPhysicallyVisible;
+                      ma = (L || k.video.videoIsFullscreen) && isPageVisible && !isPhysicallyVisible;
                     } else {
-                      currentVisible = currentVisible && R && !J;
-                      ca = ca && R && !J;
-                      K = K && R && !J;
-                      la = I && R && !J;
-                      ma = L && R && !J;
+                      currentVisible = currentVisible && isPageVisible && !isPhysicallyVisible;
+                      ca = ca && isPageVisible && !isPhysicallyVisible;
+                      K = K && isPageVisible && !isPhysicallyVisible;
+                      la = I && isPageVisible && !isPhysicallyVisible;
+                      ma = L && isPageVisible && !isPhysicallyVisible;
                     }
                     if (!N && K) {
                       N = true;
@@ -4231,20 +4275,20 @@ try {
                     var getViewableStateFunc = getTimeGuardedViewableStateFunc(b.n.getVisibleResult);
                     var h;
                     h = isIphoneOrIPod()
-                      ? new VideoState(getViewableStateFunc, b.p.b, false, 0,"strict")
-                      : new VideoState(getViewableStateFunc, b.p.b, true, 0,"strict");
+                      ? new VideoState(getViewableStateFunc, b.p.isPhysicallyVisible, false, 0,"strict")
+                      : new VideoState(getViewableStateFunc, b.p.isPhysicallyVisible, true, 0,"strict");
                     e[n].strict = h;
-                    e[n].lax = new VideoState(getViewableStateFunc,b.p.b,false,1,"lax");
+                    e[n].lax = new VideoState(getViewableStateFunc,b.p.isPhysicallyVisible,false,1,"lax");
                 } else {
-                    true !== c.isSkin && b.h && b.h.a() && (d = new VideoState(b.h.b,b.p.b,true,3,"pscope"),
+                    true !== c.isSkin && b.h && b.h.a() && (d = new VideoState(b.h.b,b.p.isPhysicallyVisible,true,3,"pscope"),
                     e[n].pscope = d);
                 }
-                b.i && b.i.insertableFunc() && !e[n].pscope && (d = new VideoState(b.i.ab,b.p.b,true,2,"pscope"),
+                b.i && b.i.insertableFunc() && !e[n].pscope && (d = new VideoState(b.i.ab,b.p.isPhysicallyVisible,true,2,"pscope"),
                 e[n].pscope = d);
                 d = false;
                 (d = b.d.x) || (d = b.d.z());
                 if (b.d.v() || d)
-                    d = new VideoState(b.u.a,b.p.b,true,5,"sframe"),
+                    d = new VideoState(b.u.a,b.p.isPhysicallyVisible,true,5,"sframe"),
                     e[n].sframe = d;
                 b.j.b.zaxs("viewCounterStarted", c);
                 (b.a.ac() || b.a.ad()) && (n = b.o.i(c.adNum)) &&
@@ -4268,7 +4312,7 @@ try {
             b.o.j = function(c, n, d) {
                 var h = e[c.adNum], m, r = b.d.x && h && !h.sframe;
                 r || (r = b.d.z() && h && !h.sframe);
-                r && (e[c.adNum].sframe = new VideoState(b.u.a,b.p.b,true,5,"sframe"),
+                r && (e[c.adNum].sframe = new VideoState(b.u.a,b.p.isPhysicallyVisible,true,5,"sframe"),
                 b.j.b.zaxs("viewCounterStarted",
                 c));
                 for (var l in h)
@@ -4614,7 +4658,7 @@ try {
                     return getOTS(c)
                 },
                 interaction_measurable: function(c) {
-                    return !b.a.y() ||
+                    return !b.a.isPortableDevice() ||
                     e(c)
                 },
                 interaction: function(b) {
@@ -4971,7 +5015,7 @@ try {
                 };
                 b.a.forEach(["zMoatImpID"],
                 function(d) {
-                    y[d] = "url" === d ? encodeURIComponent(Aa) : "mobile" === d ? b.a.y() : "avoc" === d ? c && c.reachedAvoc : h[d]
+                    y[d] = "url" === d ? encodeURIComponent(Aa) : "mobile" === d ? b.a.isPortableDevice() : "avoc" === d ? c && c.reachedAvoc : h[d]
                 });
                 return y
             }
@@ -5859,7 +5903,7 @@ try {
                 this.ee = {};
                 r && r.IS_PAGE_LEVEL || (this.ed = {},
                 b.i.y(this));
-                b.w.f(this);
+                b.w.createVideo(this);
                 this.get_duration = function() {
                     return "number" == typeof m.duration && !isNaN(m.duration) && 0 < m.duration && m.duration
                 }
@@ -6146,7 +6190,7 @@ try {
             function f(c) {
                 if (!c)
                     return false;
-                if (!b.d.g || 10 < b.a.l() || c.querySelectorAll && c.querySelector && (!c.MoatQSShimSet || c[e]))
+                if (!b.d.g || 10 < b.a.getIEOrNetscapeVersion() || c.querySelectorAll && c.querySelector && (!c.MoatQSShimSet || c[e]))
                     return true;
                 c.querySelector = function(b) {
                     b = this.querySelectorAll(b);
@@ -6327,7 +6371,7 @@ try {
                 ;
                 if (!e)
                     return false;
-                var h = b.a.l()
+                var h = b.a.getIEOrNetscapeVersion()
                   , m = null  !== h && 11 > h;
                 if (!m)
                     for (var r = e.getElementsByTagName("embed"), h = 0; h < r.length; h++) {
@@ -7287,20 +7331,16 @@ try {
                 b.s.a(f, c))
             }
             ;
-            b.p.b = function(f) {
-                var e, c;
-                e = f._calcVideoBasedOnContainer ? f.aa.parentNode : f.aa;
-                if (f.elementRect) {
-                  f.currentWidth = e.offsetWidth;
-                  f.currentHeight = e.offsetHeight;
+            b.p.isPhysicallyVisible = function(ad) {
+                var element = ad._calcVideoBasedOnContainer ? ad.aa.parentNode : ad.aa;
+                if (ad.elementRect) {
+                  ad.currentWidth = element.offsetWidth;
+                  ad.currentHeight = element.offsetHeight;
                 }
-                return 3 > f.currentWidth ||
-                  3 > f.currentHeight ||
-                  b.focus.pageIsPrerendered()
-                  || !f.video.isPlaying()
-                  && !f.video.pausedByMoat
-                  ? true
-                  : false
+                return 3 > ad.currentWidth ||
+                  3 > ad.currentHeight ||
+                  b.focus.pageIsPrerendered() ||
+                  !ad.video.isPlaying() && !ad.video.pausedByMoat;
             }
             ;
             b.p.o = function(b) {
@@ -7814,9 +7854,9 @@ try {
                     this.set(b, "undefined" !== typeof c ? c : 0) : this.metrics[b]
                 }
             }
-            function e(e) {
-                this.ad = e;
-                this.cbs = e.ao && e.ao.cbs;
+            function Video(ad) {
+                this.ad = ad;
+                this.cbs = ad.ao && ad.ao.cbs;
                 this.state = 1;
                 this.volume = -1;
                 this.audibleMeasurable = false;
@@ -7884,10 +7924,10 @@ try {
                     this.poalEnabled && this.disablePoalOnVis && c && c.hadVideo2SecOTS() &&
                     (this.poalEnabled = false,
                     1 == this.state && this.pausedByMoat && (this.pausedByMoat = false,
-                    this.triggerPlayerCallback(e.aa, this.cbs.resumeAd)));
+                    this.triggerPlayerCallback(ad.aa, this.cbs.resumeAd)));
                     this.poalEnabled && (!c.visible() && 0 == this.state && this.cbs ? (this.pausedByMoat = true,
-                    this.triggerPlayerCallback(e.aa, this.cbs.pauseAd)) : c.visible() && 1 == this.state && this.pausedByMoat && this.cbs && (this.pausedByMoat = false,
-                    this.triggerPlayerCallback(e.aa, this.cbs.resumeAd)))
+                    this.triggerPlayerCallback(ad.aa, this.cbs.pauseAd)) : c.visible() && 1 == this.state && this.pausedByMoat && this.cbs && (this.pausedByMoat = false,
+                    this.triggerPlayerCallback(ad.aa, this.cbs.resumeAd)))
                 }
                 ;
                 this.onFullyInViewTimeCount = function(b, c, d, e) {
@@ -7974,8 +8014,8 @@ try {
                 ;
                 this.onJsVideoStart = function(c) {
                     this.ad.localVideoTags = this.findVideoTags(this.ad.aa);
-                    0 == this.ad.localVideoTags.length ? this.ad.allVideoTags = e.aa.ownerDocument &&
-                    e.aa.ownerDocument.getElementsByTagName("video") : (this.videoTagDuration = this.findValidTagDuration(this.ad.localVideoTags),
+                    0 == this.ad.localVideoTags.length ? this.ad.allVideoTags = ad.aa.ownerDocument &&
+                    ad.aa.ownerDocument.getElementsByTagName("video") : (this.videoTagDuration = this.findValidTagDuration(this.ad.localVideoTags),
                     this.ad.allVideoTags = this.ad.localVideoTags);
                     var d = this;
                     b.a.forEach(this.ad.allVideoTags, function(c) {
@@ -8133,8 +8173,8 @@ try {
                         l = {
                             e: 29
                         },
-                        l.q = e.aq[29]++,
-                        b.s.a(e, l));
+                        l.q = ad.aq[29]++,
+                        b.s.a(ad, l));
                         c.calculatedQuartileState = d
                     }
                     this.started && b.w.dispatchEvent(this,
@@ -8146,14 +8186,14 @@ try {
                     l = {
                         e: 9
                     },
-                    l.q = e.aq[9]++,
+                    l.q = ad.aq[9]++,
                     b.s.a(this.ad, l));
                     if (this.started && !this.stopped && ("AdStopped" === c.event || "AdVideoComplete" === c.event || "AdSkipped" === c.event)) {
                         this.stopped = "AdSkipped" !== c.event;
                         l = {};
                         c = this.stopped ? 28 : 33;
                         l.e = c;
-                        l.q = e.aq[c]++;
+                        l.q = ad.aq[c]++;
                         b.s.a(this.ad, l);
                         try {
                             G.parentNode.removeChild(G)
@@ -8293,7 +8333,7 @@ try {
                 b.j.b.addEventCallback("adKilled", this.remove, {
                     once: true,
                     condition: function(b) {
-                        return e.adNum == b.adNum
+                        return ad.adNum == b.adNum
                     }
                 })
             }
@@ -8378,8 +8418,8 @@ try {
                 }
             }
             ;
-            b.w.f = function(b, c) {
-                b.video = new e(b)
+            b.w.createVideo = function(ad, c) {
+                ad.video = new Video(ad)
             }
             ;
             var q = [];
